@@ -63,6 +63,13 @@ window.onload = function() {
     //event listeners
     startBtn.addEventListener("click", startGame);
     clickContainer.addEventListener("mousemove", checkCursor);
+    // Mobile: mousemove/mouseover never fire from touch input, so the hook never
+    // followed a finger and fish were never caught on drag (only an occasional tap
+    // firing a synthetic click). touchstart/touchmove reuse the same position-update
+    // and hit logic mouse users already get, plus manual overlap testing since
+    // mouseover has no touch equivalent.
+    clickContainer.addEventListener("touchstart", checkTouch, { passive: false });
+    clickContainer.addEventListener("touchmove", checkTouch, { passive: false });
 
     function checkCursor (event){
         //update cursor co ordinates
@@ -71,6 +78,26 @@ window.onload = function() {
         //set fishing line to follow cursor
         fishingLine.style.left= mousePosition.x+"px";
         fishingLine.style.top = mousePosition.y+"px";
+    }
+
+    function checkTouch(event) {
+        // Prevent the page from scrolling while dragging the hook across the screen.
+        event.preventDefault();
+        const touch = event.touches[0];
+        if (!touch) return;
+        checkCursor({ clientX: touch.clientX, clientY: touch.clientY });
+        checkTouchHits(touch.clientX, touch.clientY);
+    }
+
+    function checkTouchHits(x, y) {
+        // No mouseover to rely on for touch, so hit-test every live item directly
+        // against the touch point and call the same hit() handler mouseover uses.
+        clickContainer.querySelectorAll(".item:not(.caught)").forEach(function (item) {
+            const rect = item.getBoundingClientRect();
+            if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                hit.call(item, { target: item });
+            }
+        });
     }
     //create audio element for playing music and sfx
     function sound(src) {
