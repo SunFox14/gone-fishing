@@ -24,22 +24,39 @@ window.onload = function() {
     // this fixes the remaining one). Measures the page's real content size unscaled, then
     // shrinks the whole game uniformly (fish included) so it always fits with zero overflow.
     function fitGameToViewport() {
-        gameContainer.style.transform = "none";
-        void gameContainer.offsetHeight; // force layout so the measurement below is unscaled
-        var neededH = document.documentElement.scrollHeight;
-        var neededW = document.documentElement.scrollWidth;
-        // visualViewport is the actual visible area on mobile (accounts for the
-        // address-bar/toolbar's real collapsed-or-not state); window.innerHeight can
-        // briefly report the taller "expanded" value before the toolbar settles.
-        var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-        var vw = (window.visualViewport && window.visualViewport.width) || window.innerWidth;
-        // 4% headroom so a toolbar re-appearing/settling after this runs still doesn't
-        // reintroduce a sliver of overflow — matches the "fish slightly smaller" ask directly.
-        var scale = Math.min(1, (vh / neededH) * 0.96, (vw / neededW) * 0.96);
-        gameContainer.style.position = "fixed";
-        gameContainer.style.top = "50%";
-        gameContainer.style.left = "50%";
-        gameContainer.style.transform = "translate(-50%, -50%) scale(" + scale + ")";
+        try {
+            // Clear every inline style this function itself sets (not just transform) before
+            // measuring — on a re-run (resize/orientationchange/the delayed follow-up below),
+            // leaving position:fixed;top:50%;left:50% from the PRIOR call in place corrupts
+            // the "natural size" measurement, since the container is no longer in normal
+            // document flow. Every call must measure from the same clean CSS-default baseline.
+            gameContainer.style.position = "";
+            gameContainer.style.top = "";
+            gameContainer.style.left = "";
+            gameContainer.style.transform = "none";
+            void gameContainer.offsetHeight; // force reflow so the measurement below is accurate
+            var neededH = document.documentElement.scrollHeight;
+            var neededW = document.documentElement.scrollWidth;
+            // visualViewport is the actual visible area on mobile (accounts for the
+            // address-bar/toolbar's real collapsed-or-not state); window.innerHeight can
+            // briefly report the taller "expanded" value before the toolbar settles.
+            var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+            var vw = (window.visualViewport && window.visualViewport.width) || window.innerWidth;
+            // 4% headroom so a toolbar re-appearing/settling after this runs still doesn't
+            // reintroduce a sliver of overflow — matches the "fish slightly smaller" ask directly.
+            var scale = Math.min(1, (vh / neededH) * 0.96, (vw / neededW) * 0.96);
+            if (!isFinite(scale) || scale <= 0) scale = 0.9; // safe fallback, never leave it unscaled
+            gameContainer.style.position = "fixed";
+            gameContainer.style.top = "50%";
+            gameContainer.style.left = "50%";
+            gameContainer.style.transform = "translate(-50%, -50%) scale(" + scale + ")";
+        } catch (e) {
+            // Never leave the container silently unscaled/unclipped if something above throws.
+            gameContainer.style.position = "fixed";
+            gameContainer.style.top = "50%";
+            gameContainer.style.left = "50%";
+            gameContainer.style.transform = "translate(-50%, -50%) scale(0.9)";
+        }
     }
     fitGameToViewport();
     // Real mobile browsers can report a stale viewport size on the very first paint
