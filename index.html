@@ -4,7 +4,10 @@
     <title>Gone Fishing!</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <link href="https://fonts.googleapis.com/css?family=Black+Ops+One|Patrick+Hand&display=swap" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <!-- ?v= busts the browser's own cache for this sub-resource specifically -- a
+         cache-busted request for THIS page (e.g. ?v=... on the iframe src) doesn't
+         automatically re-fetch resources it references if their own URL is unchanged. -->
+    <link rel="stylesheet" type="text/css" href="css/style.css?v=61f7b8c">
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
@@ -32,6 +35,6 @@
         <span id="line"></span>
     </div>
     <div id="bubbles"></div>
-    <script type="text/javascript" src="js/script.js"></script>
+    <script type="text/javascript" src="js/script.js?v=61f7b8c"></script>
 </body>
 </html>
