@@ -17,6 +17,42 @@ window.onload = function() {
         x:0,
         y:0
     }
+    // Scale-to-fit: the game's own CSS uses vw/vh for the container but fixed px for
+    // fish/UI, so on short/narrow real-device viewports the fixed-size content can still
+    // exceed the container and push the page's real scroll size past the viewport (the
+    // actual cause of "still scrolls" — the meta viewport tag fixed a different problem,
+    // this fixes the remaining one). Measures the page's real content size unscaled, then
+    // shrinks the whole game uniformly (fish included) so it always fits with zero overflow.
+    function fitGameToViewport() {
+        gameContainer.style.transform = "none";
+        void gameContainer.offsetHeight; // force layout so the measurement below is unscaled
+        var neededH = document.documentElement.scrollHeight;
+        var neededW = document.documentElement.scrollWidth;
+        // visualViewport is the actual visible area on mobile (accounts for the
+        // address-bar/toolbar's real collapsed-or-not state); window.innerHeight can
+        // briefly report the taller "expanded" value before the toolbar settles.
+        var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+        var vw = (window.visualViewport && window.visualViewport.width) || window.innerWidth;
+        // 4% headroom so a toolbar re-appearing/settling after this runs still doesn't
+        // reintroduce a sliver of overflow — matches the "fish slightly smaller" ask directly.
+        var scale = Math.min(1, (vh / neededH) * 0.96, (vw / neededW) * 0.96);
+        gameContainer.style.position = "fixed";
+        gameContainer.style.top = "50%";
+        gameContainer.style.left = "50%";
+        gameContainer.style.transform = "translate(-50%, -50%) scale(" + scale + ")";
+    }
+    fitGameToViewport();
+    // Real mobile browsers can report a stale viewport size on the very first paint
+    // (before the toolbar finishes collapsing/expanding) — a short follow-up catches that.
+    setTimeout(fitGameToViewport, 300);
+    window.addEventListener("resize", fitGameToViewport);
+    window.addEventListener("orientationchange", function () {
+        setTimeout(fitGameToViewport, 150);
+    });
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", fitGameToViewport);
+    }
+
     var gameTimerInterval = null;
     var day = 0;
     var score = 0;
@@ -136,6 +172,7 @@ window.onload = function() {
         clickContainer.style.display = "block";
         gameStats.style.display = "flex";
         gameGoal.style.display = "block";
+        fitGameToViewport(); // content size changed (instructions hidden, game stats shown)
         createItems();
     }
     //create items function
@@ -477,6 +514,7 @@ window.onload = function() {
         }
         infoWrapper.style.display = "block";
         startTitle.style.display = "block";
+        fitGameToViewport(); // instructions text length varies day to day
     }
     //Make bubbles
     var bubbles = document.getElementById('bubbles');
